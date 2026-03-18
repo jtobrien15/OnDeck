@@ -5,15 +5,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { format } from "date-fns";
 import { EnrollmentTable } from "@/components/enrollment-table";
-
-const COURSE_TYPE_LABELS: Record<string, string> = {
-  LIFEGUARD_CERT: "Lifeguard Certification",
-  LIFEGUARD_RECERT: "Lifeguard Recertification",
-  WSI: "Water Safety Instructor",
-  BLS: "Basic Life Support",
-  FIRST_AID: "First Aid",
-  CPR_AED: "CPR/AED",
-};
+import { COURSE_TYPE_LABELS, LOCATION_LABELS } from "@/lib/constants";
 
 export default async function ClassDetailPage({
   params,
@@ -67,7 +59,7 @@ export default async function ClassDetailPage({
           <p className="text-muted-foreground mt-1">
             {format(new Date(cls.startDate), "MMMM d")} –{" "}
             {format(new Date(cls.endDate), "MMMM d, yyyy")} &middot;{" "}
-            {cls.location.replace("_", " ")}
+            {LOCATION_LABELS[cls.location] || cls.location}
           </p>
         </div>
         <span

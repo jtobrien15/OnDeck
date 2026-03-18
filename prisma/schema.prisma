@@ -11,17 +11,21 @@ datasource db {
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
 
 enum Location {
-  BRANCH_A
-  BRANCH_B
+  EMILSON
+  HALE
 }
 
 enum CourseType {
-  LIFEGUARD_CERT
-  LIFEGUARD_RECERT
-  WSI
+  LIFEGUARDING
+  CPR_AED_PRO
+  FIRST_AID_CPR_AED
   BLS
-  FIRST_AID
-  CPR_AED
+  LIFEGUARD_INSTRUCTOR
+  FA_CPR_AED_INSTRUCTOR
+  BLS_INSTRUCTOR
+  BABYSITTER_TRAINING
+  WSI
+  LGI_IT_RECERT
 }
 
 enum ClassStatus {

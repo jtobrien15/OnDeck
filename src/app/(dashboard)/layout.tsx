@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GraduationCap, Users, Upload } from "lucide-react";
+import { LayoutDashboard, GraduationCap, Users, Upload, Download, ArrowLeftRight, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,6 +10,9 @@ const navItems = [
   { href: "/dashboard/classes" as const, label: "Classes", icon: GraduationCap },
   { href: "/dashboard/students" as const, label: "Students", icon: Users },
   { href: "/dashboard/import" as const, label: "Import", icon: Upload },
+  { href: "/dashboard/export" as const, label: "Export", icon: Download },
+  { href: "/dashboard/transfers" as const, label: "Transfers", icon: ArrowLeftRight },
+  { href: "/dashboard/emails" as const, label: "Emails", icon: Mail },
 ];
 
 export default function DashboardLayout({

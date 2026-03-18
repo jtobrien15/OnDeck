@@ -3,25 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { format } from "date-fns";
-
-const COURSE_TYPE_LABELS: Record<string, string> = {
-  LIFEGUARD_CERT: "Lifeguard Certification",
-  LIFEGUARD_RECERT: "Lifeguard Recertification",
-  WSI: "Water Safety Instructor",
-  BLS: "Basic Life Support",
-  FIRST_AID: "First Aid",
-  CPR_AED: "CPR/AED",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  SCHEDULED: "bg-gray-100 text-gray-700",
-  OPEN_FOR_REGISTRATION: "bg-blue-100 text-blue-700",
-  FULL: "bg-yellow-100 text-yellow-700",
-  CONFIRMED: "bg-green-100 text-green-700",
-  IN_PROGRESS: "bg-purple-100 text-purple-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
-};
+import { COURSE_TYPE_LABELS, LOCATION_LABELS, CLASS_STATUS_COLORS } from "@/lib/constants";
 
 export default async function ClassesPage() {
   const classes = await db.class.findMany({
@@ -103,7 +85,7 @@ export default async function ClassesPage() {
                     {format(new Date(cls.endDate), "MMM d, yyyy")}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {cls.location.replace("_", " ")}
+                    {LOCATION_LABELS[cls.location] || cls.location}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <span
@@ -121,7 +103,7 @@ export default async function ClassesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[cls.status] || "bg-gray-100 text-gray-700"}`}
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${CLASS_STATUS_COLORS[cls.status] || "bg-gray-100 text-gray-700"}`}
                     >
                       {cls.status.replace(/_/g, " ")}
                     </span>

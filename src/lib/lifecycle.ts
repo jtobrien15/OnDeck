@@ -7,6 +7,11 @@
 import { EnrollmentStatus, PrereqResult } from "@prisma/client";
 import { db } from "./db";
 import type { TransitionMetadata } from "@/types";
+import {
+  sendWelcomeEmail,
+  sendPrereqFailedEmail,
+  sendTransferOptionsEmail,
+} from "@/lib/email-triggers";
 
 // ─── VALID TRANSITIONS ────────────────────────────────────────────────────────
 
@@ -83,6 +88,13 @@ export async function transitionEnrollment(
   // ─── PER-TRANSITION SIDE EFFECTS ──────────────────────────────────────────
 
   switch (newStatus) {
+    case "REGISTERED": {
+      // E.g., promoted from waitlist — send welcome email
+      sendWelcomeEmail(enrollment, enrollment.student, enrollment.class)
+        .catch((err) => console.error("[lifecycle] E1 email failed:", err));
+      break;
+    }
+
     case "PREREQ_SCHEDULED": {
       if (metadata?.prereqScheduledDate) {
         updateData.prereqScheduledDate = metadata.prereqScheduledDate;
@@ -126,17 +138,21 @@ export async function transitionEnrollment(
       });
 
       if (waitlistCount > 0) {
-        // Must transfer — auto-advance to TRANSFER_PENDING
+        // Must transfer — send E3 (canRetry=false), then auto-advance
+        sendPrereqFailedEmail(enrollment, enrollment.student, enrollment.class, false)
+          .catch((err) => console.error("[lifecycle] E3 email failed:", err));
         return transitionEnrollment(enrollmentId, "TRANSFER_PENDING", metadata);
       }
 
       // No waitlist — stay PREREQ_FAILED, Mary Beth can reschedule
-      // TODO: send E3 email
+      sendPrereqFailedEmail(enrollment, enrollment.student, enrollment.class, true)
+        .catch((err) => console.error("[lifecycle] E3 email failed:", err));
       return { success: true };
     }
 
     case "TRANSFER_PENDING": {
-      // TODO: send E4 email with available class options
+      sendTransferOptionsEmail(enrollment, enrollment.student, enrollment.class)
+        .catch((err) => console.error("[lifecycle] E4 email failed:", err));
       break;
     }
 
@@ -154,19 +170,22 @@ export async function transitionEnrollment(
       });
 
       // Create new enrollment in destination class
-      await db.enrollment.create({
+      const newEnrollment = await db.enrollment.create({
         data: {
           studentId: enrollment.studentId,
           classId: metadata.destinationClassId,
           status: "REGISTERED",
           transferredFromClassId: enrollment.classId,
         },
+        include: { class: true },
       });
 
       // Trigger waitlist check on original class
       await triggerWaitlistPromotion(enrollment.classId);
 
-      // TODO: send E1 for new enrollment
+      // Send E1 welcome email for the new enrollment
+      sendWelcomeEmail(newEnrollment, enrollment.student, newEnrollment.class)
+        .catch((err) => console.error("[lifecycle] E1 email (transfer) failed:", err));
       return { success: true };
     }
 

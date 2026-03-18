@@ -3,33 +3,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { format } from "date-fns";
 import Link from "next/link";
-
-const STATUS_COLORS: Record<string, string> = {
-  REGISTERED: "bg-blue-100 text-blue-700",
-  PREREQ_SCHEDULED: "bg-cyan-100 text-cyan-700",
-  PREREQ_PASSED: "bg-green-100 text-green-700",
-  PREREQ_FAILED: "bg-red-100 text-red-700",
-  TRANSFER_PENDING: "bg-orange-100 text-orange-700",
-  TRANSFERRED: "bg-gray-100 text-gray-600",
-  WAITLISTED: "bg-yellow-100 text-yellow-700",
-  ONLINE_PENDING: "bg-indigo-100 text-indigo-700",
-  CONFIRMED: "bg-emerald-100 text-emerald-700",
-  IN_PROGRESS: "bg-purple-100 text-purple-700",
-  COMPLETED: "bg-emerald-100 text-emerald-800",
-  DID_NOT_COMPLETE: "bg-red-100 text-red-700",
-  CERTIFIED: "bg-green-200 text-green-800",
-  CANCELLED: "bg-gray-100 text-gray-500",
-  NO_SHOW: "bg-red-100 text-red-600",
-};
-
-const COURSE_TYPE_LABELS: Record<string, string> = {
-  LIFEGUARD_CERT: "LG Cert",
-  LIFEGUARD_RECERT: "LG Recert",
-  WSI: "WSI",
-  BLS: "BLS",
-  FIRST_AID: "First Aid",
-  CPR_AED: "CPR/AED",
-};
+import { COURSE_TYPE_LABELS, ENROLLMENT_STATUS_COLORS } from "@/lib/constants";
 
 export default async function StudentsPage({
   searchParams,
@@ -167,7 +141,7 @@ export default async function StudentsPage({
                     <td className="px-4 py-3">
                       {latestEnrollment ? (
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[latestEnrollment.status] || "bg-gray-100 text-gray-700"}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ENROLLMENT_STATUS_COLORS[latestEnrollment.status] || "bg-gray-100 text-gray-700"}`}
                         >
                           {latestEnrollment.status.replace(/_/g, " ")}
                         </span>

@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/prereq-reminders", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/class-reminders", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/waitlist-deadlines", "schedule": "0 */6 * * *" }
+  ]
+}

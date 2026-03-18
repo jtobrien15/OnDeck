@@ -5,17 +5,21 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const COURSE_TYPES = [
-  { value: "LIFEGUARD_CERT", label: "Lifeguard Certification" },
-  { value: "LIFEGUARD_RECERT", label: "Lifeguard Recertification" },
-  { value: "WSI", label: "Water Safety Instructor" },
+  { value: "LIFEGUARDING", label: "Lifeguarding" },
+  { value: "CPR_AED_PRO", label: "CPR/AED for Professional Rescuers" },
+  { value: "FIRST_AID_CPR_AED", label: "First Aid/CPR/AED" },
   { value: "BLS", label: "Basic Life Support" },
-  { value: "FIRST_AID", label: "First Aid" },
-  { value: "CPR_AED", label: "CPR/AED" },
+  { value: "LIFEGUARD_INSTRUCTOR", label: "Lifeguarding Instructor" },
+  { value: "FA_CPR_AED_INSTRUCTOR", label: "First Aid/CPR/AED Instructor" },
+  { value: "BLS_INSTRUCTOR", label: "Basic Life Support Instructor" },
+  { value: "BABYSITTER_TRAINING", label: "Babysitter's Training" },
+  { value: "WSI", label: "Water Safety Instructor" },
+  { value: "LGI_IT_RECERT", label: "LGI/IT Recertification" },
 ];
 
 const LOCATIONS = [
-  { value: "BRANCH_A", label: "Branch A" },
-  { value: "BRANCH_B", label: "Branch B" },
+  { value: "EMILSON", label: "Emilson" },
+  { value: "HALE", label: "Hale" },
 ];
 
 export default function NewClassPage() {
