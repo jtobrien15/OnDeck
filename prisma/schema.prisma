@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum Location {
+  BRANCH_A
+  BRANCH_B
+}
+
+enum CourseType {
+  LIFEGUARD_CERT
+  LIFEGUARD_RECERT
+  WSI
+  BLS
+  FIRST_AID
+  CPR_AED
+}
+
+enum ClassStatus {
+  SCHEDULED
+  OPEN_FOR_REGISTRATION
+  FULL
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EnrollmentStatus {
+  REGISTERED
+  PREREQ_SCHEDULED
+  PREREQ_PASSED
+  PREREQ_FAILED
+  TRANSFER_PENDING
+  TRANSFERRED
+  WAITLISTED
+  ONLINE_PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  DID_NOT_COMPLETE
+  CERTIFIED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PrereqResult {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum CourseResult {
+  PENDING
+  PASSED
+  FAILED
+  INCOMPLETE
+}
+
+enum InstructorRole {
+  LEAD
+  SUPPORT
+}
+
+// ─── MODELS ──────────────────────────────────────────────────────────────────
+
+model Student {
+  id                String          @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  dateOfBirth       DateTime?
+  parentName        String?
+  parentEmail       String?
+  sgaRegistrantName String? // Name from SGA (may be parent, not student)
+  sgaRegistrationId String? // Reference back to SGA
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  enrollments     Enrollment[]
+  waitlistEntries WaitlistEntry[]
+}
+
+model Class {
+  id              String      @id @default(cuid())
+  courseType      CourseType
+  location        Location
+  startDate       DateTime
+  endDate         DateTime
+  scheduleDetails String // e.g., "Fri 5-9pm, Sat-Sun 8am-6pm"
+  durationDays    Int
+  minEnrollment   Int         @default(5)
+  maxEnrollment   Int         @default(10) // per instructor
+  requiresPrereq  Boolean     @default(true)
+  requiresOnline  Boolean     @default(true)
+  prereqDeadline  DateTime? // Auto-calculated: startDate minus 3 days
+  status          ClassStatus @default(SCHEDULED)
+  sgaClassId      String? // Reference to SGA
+  instructorToken String?     @unique // Unique URL token for instructor portal
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  enrollments            Enrollment[]
+  transferredEnrollments Enrollment[]                @relation("TransferSource")
+  waitlist               WaitlistEntry[]
+  instructorAssignments  ClassInstructorAssignment[]
+}
+
+model Enrollment {
+  id                        String           @id @default(cuid())
+  studentId                 String
+  classId                   String
+  status                    EnrollmentStatus @default(REGISTERED)
+  registrationDate          DateTime         @default(now())
+  prereqScheduledDate       DateTime?
+  prereqResult              PrereqResult     @default(PENDING)
+  prereqAttempts            Int              @default(0)
+  prereqCompletedDate       DateTime?
+  onlineSessionComplete     Boolean          @default(false)
+  onlineSessionVerifiedDate DateTime?
+  courseResult              CourseResult     @default(PENDING)
+  courseResultReason        String? // Maps to Red Cross "Reason" field
+  additionalInfo            String? // Maps to Red Cross "Additional Information" field
+  certificationSubmitted    Boolean          @default(false)
+  certificationSubmittedDate DateTime?
+  transferredFromClassId    String? // If this enrollment came from a transfer
+  waitlistPosition          Int?
+  notes                     String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+
+  student              Student  @relation(fields: [studentId], references: [id])
+  class                Class    @relation(fields: [classId], references: [id])
+  transferredFromClass Class?   @relation("TransferSource", fields: [transferredFromClassId], references: [id])
+  emailLog             EmailLog[]
+
+  @@index([classId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model Instructor {
+  id             String      @id @default(cuid())
+  name           String
+  email          String      @unique
+  phone          String?
+  certifications CourseType[]
+  locations      Location[]
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  assignments ClassInstructorAssignment[]
+}
+
+model ClassInstructorAssignment {
+  id           String         @id @default(cuid())
+  classId      String
+  instructorId String
+  role         InstructorRole @default(LEAD)
+
+  class      Class      @relation(fields: [classId], references: [id])
+  instructor Instructor @relation(fields: [instructorId], references: [id])
+
+  @@unique([classId, instructorId])
+}
+
+model WaitlistEntry {
+  id               String       @id @default(cuid())
+  classId          String
+  studentId        String
+  position         Int
+  prereqStatus     PrereqResult @default(PENDING)
+  addedDate        DateTime     @default(now())
+  notified         Boolean      @default(false)
+  notifiedDate     DateTime?
+  responseDeadline DateTime? // 48 hours after notification
+
+  class   Class   @relation(fields: [classId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([classId, studentId])
+  @@index([classId, position])
+}
+
+model EmailLog {
+  id             String     @id @default(cuid())
+  enrollmentId   String?
+  templateId     String // E1, E2, E3, etc.
+  recipientEmail String
+  subject        String
+  sentAt         DateTime   @default(now())
+  status         String     @default("sent") // sent, failed, bounced
+
+  enrollment Enrollment? @relation(fields: [enrollmentId], references: [id])
+
+  @@index([enrollmentId])
+}
+
+model SystemSettings {
+  id                    String   @id @default("default")
+  evaluationOptions     String[] // Red Cross LMS accepted Evaluation values
+  reasonOptions         String[] // Red Cross LMS accepted Reason values
+  prereqMinDaysBefore   Int      @default(3)
+  prereqMaxDaysBefore   Int      @default(30)
+  reminderDaysBefore    Int      @default(3)
+  nudgeDaysAfterReg     Int      @default(7)
+  certDeadlineDays      Int      @default(10)
+  waitlistResponseHours Int      @default(48)
+}
