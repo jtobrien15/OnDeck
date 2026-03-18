@@ -1,0 +1,144 @@
+export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { format } from "date-fns";
+
+const COURSE_TYPE_LABELS: Record<string, string> = {
+  LIFEGUARD_CERT: "Lifeguard Certification",
+  LIFEGUARD_RECERT: "Lifeguard Recertification",
+  WSI: "Water Safety Instructor",
+  BLS: "Basic Life Support",
+  FIRST_AID: "First Aid",
+  CPR_AED: "CPR/AED",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  SCHEDULED: "bg-gray-100 text-gray-700",
+  OPEN_FOR_REGISTRATION: "bg-blue-100 text-blue-700",
+  FULL: "bg-yellow-100 text-yellow-700",
+  CONFIRMED: "bg-green-100 text-green-700",
+  IN_PROGRESS: "bg-purple-100 text-purple-700",
+  COMPLETED: "bg-emerald-100 text-emerald-700",
+  CANCELLED: "bg-red-100 text-red-700",
+};
+
+export default async function ClassesPage() {
+  const classes = await db.class.findMany({
+    include: {
+      enrollments: {
+        where: {
+          status: { notIn: ["CANCELLED", "NO_SHOW", "TRANSFERRED"] },
+        },
+      },
+      instructorAssignments: {
+        include: { instructor: true },
+      },
+    },
+    orderBy: { startDate: "desc" },
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Classes</h1>
+        <Link
+          href="/dashboard/classes/new"
+          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          + New Class
+        </Link>
+      </div>
+
+      <div className="rounded-md border">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Course
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Dates
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Location
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Enrolled
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Instructors
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {classes.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
+                  No classes yet. Create your first class to get started.
+                </td>
+              </tr>
+            ) : (
+              classes.map((cls) => (
+                <tr key={cls.id} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/classes/${cls.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {COURSE_TYPE_LABELS[cls.courseType] || cls.courseType}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      {cls.scheduleDetails}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {format(new Date(cls.startDate), "MMM d")} –{" "}
+                    {format(new Date(cls.endDate), "MMM d, yyyy")}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {cls.location.replace("_", " ")}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <span
+                      className={
+                        cls.enrollments.length >= cls.maxEnrollment
+                          ? "text-red-600 font-medium"
+                          : ""
+                      }
+                    >
+                      {cls.enrollments.length}
+                    </span>
+                    <span className="text-muted-foreground">
+                      /{cls.maxEnrollment}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[cls.status] || "bg-gray-100 text-gray-700"}`}
+                    >
+                      {cls.status.replace(/_/g, " ")}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {cls.instructorAssignments.length > 0
+                      ? cls.instructorAssignments
+                          .map((a) => a.instructor.name)
+                          .join(", ")
+                      : "—"}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
